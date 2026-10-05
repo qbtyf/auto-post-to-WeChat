@@ -1,0 +1,14 @@
+# 编译产物（可能含注入的密钥，严禁入库）
+*.exe
+
+# 测试/诊断产物
+*_结果.txt
+ttc*.png
+封面样图-*.png
+gridtest*
+
+# 系统与编辑器杂物
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
