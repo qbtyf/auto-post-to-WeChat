@@ -197,21 +197,28 @@ func (c *Client) ReplaceLocalImages(htmlStr, mdDir string) (string, int, error) 
 // imgSrcRe 匹配 <img> 标签的 src 属性（双引号形式，goldmark 输出即为双引号）。
 var imgSrcRe = regexp.MustCompile(`(?is)<img[^>]*src="([^"]+)"[^>]*>`)
 
-// AddDraft 接口 4：新增草稿。
-func (c *Client) AddDraft(title, author, digest, content, thumbMediaID string) error {
+// AddDraft 接口 4：新增草稿（v2.0 新增 contentSourceURL=文末「阅读原文」链接）。
+func (c *Client) AddDraft(title, author, digest, content, thumbMediaID, contentSourceURL string) error {
 	if !c.tokenValid() {
 		if err := c.refreshToken(); err != nil {
 			return err
 		}
 	}
+	// 微信限制：标题最长 64 字（按字符数，Python 版同规则）
+	if r := []rune(title); len(r) > 64 {
+		title = string(r[:64])
+	}
 	article := map[string]any{
-		"title":                  title,
-		"author":                 author,
-		"digest":                 digest,
-		"content":                content,
-		"thumb_media_id":         thumbMediaID,
-		"need_open_comment":      0,
-		"only_fans_can_comment":  0,
+		"title":                 title,
+		"author":                author,
+		"digest":                digest,
+		"content":               content,
+		"thumb_media_id":        thumbMediaID,
+		"need_open_comment":     0,
+		"only_fans_can_comment": 0,
+	}
+	if contentSourceURL != "" {
+		article["content_source_url"] = contentSourceURL // 文末「阅读原文」跳转
 	}
 	payload := map[string]any{"articles": []any{article}}
 	body, _ := json.Marshal(payload)

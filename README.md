@@ -104,7 +104,8 @@ CGO_ENABLED=1 go build -ldflags "-H=windowsgui -X wechat-mp-publisher/config.App
 ├── main.go               # 程序入口 + Fyne 界面 + 发布流程
 ├── theme.go              # 公众号蓝浅色主题
 ├── config/config.go      # ⚠️ 凭据配置（AppID/AppSecret/SSH）
-├── converter/            # Markdown → 公众号 HTML（8 条清洗规则）
+├── converter/            # Markdown → 公众号 HTML（12 条清洗规则）
+├── converttest/          # 转换回归测试工具（不启 GUI 快速验证，附引用块长度指标）
 ├── covergen/             # 封面绘制（4 风格，系统微软雅黑，零字体依赖）
 ├── tunnel/               # SSH 隧道（DialContext 直走 SSH 通道）
 ├── wechat/               # 微信 API（token/上传素材/存草稿）
@@ -115,6 +116,17 @@ CGO_ENABLED=1 go build -ldflags "-H=windowsgui -X wechat-mp-publisher/config.App
 ## 技术栈
 
 Go 1.22+ · Fyne v2.8（图形界面）· golang.org/x/crypto/ssh（隧道）· goldmark（Markdown 解析）
+
+## 更新日志
+
+### v2.1（2026-10-06）引用块修复版
+
+- **新增「单个引用块文字量自动拆分」**：微信公众号 2026-10 起的编辑器校验，单个 `<blockquote>` 内纯文字量超过约 450 字会报「多媒体插件校验出错」（普通段落不受限）。转换器现在自动把超长引用块按清单条目换行 → 句号 → 硬切的优先级拆到 400 字以内（`converter.SplitLongBlockquotes`），与实测发表成功的逻辑逐行对齐。
+
+### v2.0（2026-10-06）多媒体修复版
+
+- 对齐全部既有清洗规则：删除 HTML 注释、原生 HTML 直通（goldmark WithUnsafe）、colgroup 列宽迁移、链接转文末脚注、不可见 Unicode 清理等 14 项——修复 v1.x 手写表格全丢导致的编辑器报错
+- 新增：站外链接自动转文末「参考链接」、支持「阅读原文」跳转（`config.BlogURL`）、标题 64 字截断
 
 ## 免责声明
 

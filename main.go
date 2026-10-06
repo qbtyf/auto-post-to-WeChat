@@ -1,10 +1,10 @@
 // 公众号发稿助手 · 单文件 exe 版
 //
-// 一个把 Markdown 一键发布到微信公众号草稿箱的 Windows 桌面工具：
-//   1. Markdown → 公众号排版样式（8 条清洗规则）
-//   2. 封面自动生成（4 风格）/ 内嵌默认封面 / 自选图片
-//   3. 内置 SSH 隧道（应对公众号 IP 白名单，可留空直连）
-//   4. Fyne 桌面窗口，凭据见 config/config.go（使用前必填）
+// 【决策依据】Z 盘《公众号发稿exe化·技术决策记录·2026-10-03》四项已定选择：
+//   1. 技术路线：Go 重写（本程序）
+//   2. 密钥方案：AppSecret 打进 exe —— ⚠️ exe 仅限齐先生自有设备使用，严禁外传
+//   3. 隧道方案：exe 内置自动隧道（tunnel 包：SSH 连 ECS + 本地 SOCKS5）
+//   4. 界面形态：Fyne 桌面窗口（本文件，齐先生 2026-10-04 二次确认）
 //
 // 【使用流程】
 //   选 MD 文件 → 选封面方案 →（可选）按章节拆分 → 生成预览 → 上传到草稿箱
@@ -80,7 +80,7 @@ func main() {
 		mdLabel.SetText(mdPath)
 		logf("已选择 MD：%s", mdPath)
 	})
-	btnMD.Importance = widget.HighImportance // 所有操作按钮统一显眼
+	btnMD.Importance = widget.HighImportance // 【v1.8】齐先生要求：与主按钮同级别显眼
 
 	// ================= 封面三方案（v1.6：内嵌单选按钮组，弃用下拉弹层） =================
 	// 【为什么不用 Select 下拉框】Fyne 的弹层（PopUp：下拉列表/浮层菜单）在 Windows
@@ -94,7 +94,7 @@ func main() {
 	// 自动生成方案：风格选择 + 封面标题 + 窗口内预览
 	styleRadio := widget.NewRadioGroup(covergen.Styles, nil)
 	styleRadio.Horizontal = true
-	styleRadio.SetSelected(covergen.Styles[0]) // 默认终端风
+	styleRadio.SetSelected(covergen.Styles[0]) // 默认终端风（2026-10-05 齐先生确认）
 
 	coverTitleEntry := widget.NewEntry()
 	coverTitleEntry.SetPlaceHolder("封面标题（留空 = 自动用每篇文章的标题）")
@@ -345,6 +345,16 @@ func publishFlow(mdPath string, split bool, author, coverMode, coverStyle, cover
 			logf("  共替换 %d 张正文图片", n)
 		}
 
+		// 5.1b 上传前清洗（v2.0 补齐 Python 版全部规则：剥<a>/删注释/清不可见
+		// 字符/剔非微信图源 img/压缩 style——「多媒体插件校验出错」修复关键步）
+		html = converter.SanitizeForWechat(html)
+
+		// 5.1c 单篇直发时文末加「阅读原文」引导行（与 Python 版一致，拆分模式不加）
+		if len(arts) == 1 {
+			html += `<section style="margin-top:24px;text-align:center;color:#576b95;` +
+				`font-size:13px;">▼ 点击文末「阅读原文」，访问老齐的博客</section>`
+		}
+
 		// 5.2 封面上传为永久素材（每篇都要一个 thumb_media_id）
 		thumb, err := client.UploadCover(coverFile)
 		if err != nil {
@@ -353,8 +363,8 @@ func publishFlow(mdPath string, split bool, author, coverMode, coverStyle, cover
 		}
 		logf("  🖼 封面已上传")
 
-		// 5.3 新增草稿
-		if err := client.AddDraft(art.Title, author, art.Digest, html, thumb); err != nil {
+		// 5.3 新增草稿（含「阅读原文」跳转链接）
+		if err := client.AddDraft(art.Title, author, art.Digest, html, thumb, config.BlogURL); err != nil {
 			logf("❌ %v", err)
 			return
 		}

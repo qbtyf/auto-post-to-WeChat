@@ -1,8 +1,8 @@
-// Package tunnel 实现「exe 内置自动隧道」：
+// Package tunnel 实现「exe 内置自动隧道」（决策点 3 · 方案 A）：
 //
-// 程序启动后自动用 SSH 连上 config.go 里配置的服务器（ECSHost）；之后所有
-// 微信公众号 API 请求通过 http.Transport 的 DialContext 直接在 SSH 通道上
-// 拨号出去（服务器出口 IP 固定，需加入公众号后台 IP 白名单）。
+// 程序启动后自动用 SSH 连上 config.ECSHost 指定的服务器；之后所有微信公众号
+// API 请求通过 http.Transport 的 DialContext 直接在 SSH 通道上拨号出去
+// （该服务器出口 IP 固定，需提前加入公众号后台 IP 白名单）。
 //
 // 【2026-10-05 重大重构】原实现是 SSH + 本地 SOCKS5 动态转发（对应 Python 版
 // paramiko 的 socks 方案），实测踩坑：SSH 转发通道在「先读后写」时序下会立即
@@ -42,7 +42,7 @@ func (t *Tunnel) Close() {
 
 // privateKeyCandidates 常见 SSH 私钥文件名（按顺序探测，先密钥后密码）。
 var privateKeyCandidates = []string{
-	"id_ed25519", // 本机 ~/.ssh 登记过的 ed25519 密钥
+	"id_ed25519", // 甲/乙电脑登记过的 ed25519 密钥
 	"id_rsa",
 }
 

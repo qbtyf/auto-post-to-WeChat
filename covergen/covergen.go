@@ -30,8 +30,8 @@ type colorRGBA = color.RGBA
 // Styles 支持的封面风格列表（下拉框用，第一项为默认）。
 var Styles = []string{"终端风", "简报风", "科技渐变风", "极简黑白风"}
 
-// BrandText 封面上显示的公众号名（可改成你自己的）。
-const BrandText = "我的公众号"
+// BrandText 封面上的公众号名。
+const BrandText = "老齐的周报"
 
 const (
 	width  = 900
